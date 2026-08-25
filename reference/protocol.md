@@ -83,19 +83,33 @@ mkdir -p "$RUN"
 SKILL="$HOME/.claude/skills/parallax"
 EFFORT=<R0에서 사용자가 고른 값>
 
-wc -l < ~/.codex/session_index.jsonl > "$RUN/idx.before"
-
 timeout 600 codex exec \
   -s read-only \
   -c model_reasoning_effort="$EFFORT" \
   --output-schema "$SKILL/reference/schema/finding.schema.json" \
   -o "$RUN/findings-theirs.json" \
-  - < "$RUN/brief.md"
+  - < "$RUN/brief.md" | tee "$RUN/run.log"
 
-tail -n +$(( $(cat "$RUN/idx.before") + 1 )) ~/.codex/session_index.jsonl \
-  | head -1 | python3 -c 'import json,sys;print(json.loads(sys.stdin.read())["id"])' \
-  > "$RUN/session-id"
+grep -m1 '^session id:' "$RUN/run.log" | awk '{print $3}' > "$RUN/session-id"
 ```
+
+`codex exec`는 시작 시 stdout에 헤더를 찍는다. 여기서 세션 id를 얻는다.
+
+```text
+OpenAI Codex v0.149.1
+--------
+workdir: ...
+model: gpt-5.6-sol
+approval: never
+sandbox: read-only
+reasoning effort: high
+session id: 01a03929-afcd-7ed2-8e8e-a20a55419adb
+--------
+```
+
+`~/.codex/session_index.jsonl`에는 `exec` 세션이 기록되지 않는다 (실측 확인).
+인덱스 스냅샷 방식으로는 세션 id를 얻을 수 없으므로 반드시 헤더를 파싱한다.
+헤더에서 id를 못 얻으면 R3를 세션 이어받기 없이 진행하되, 브리프 전문을 다시 첨부한다.
 
 - `-s read-only` — 상대는 읽기만 한다. 예외 없다.
 - `-C <경로>` — 대상이 현재 디렉터리 밖이면 추가한다.

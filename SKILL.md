@@ -114,24 +114,22 @@ grep -E '^(model|model_reasoning_effort)' ~/.codex/config.toml   # Codex가 상�
 RUN=.parallax-runs/<run-id>
 SKILL=<이 스킬의 설치 경로>
 
-# 세션 id를 고정하기 위해 인덱스 스냅샷 (R3에서 대화를 이어받는 데 필요)
-wc -l < ~/.codex/session_index.jsonl > "$RUN/idx.before"
-
 codex exec \
   -s read-only \
   -c model_reasoning_effort="$EFFORT" \
   --output-schema "$SKILL/reference/schema/finding.schema.json" \
   -o "$RUN/findings-theirs.json" \
-  - < "$RUN/brief.md"
+  - < "$RUN/brief.md" | tee "$RUN/run.log"
 
-# 새로 생긴 세션 id 추출
-tail -n +$(( $(cat "$RUN/idx.before") + 1 )) ~/.codex/session_index.jsonl \
-  | head -1 | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["id"])' \
-  > "$RUN/session-id"
+# R3에서 대화를 이어받으려면 세션 id가 필요하다. exec 헤더에 출력된다.
+grep -m1 '^session id:' "$RUN/run.log" | awk '{print $3}' > "$RUN/session-id"
 ```
 
 `--last` 대신 세션 id를 명시적으로 잡는다. 그 사이 사용자가 다른 Codex 세션을 열면
 엉뚱한 대화를 이어받게 된다.
+
+`~/.codex/session_index.jsonl`은 대화형 세션만 기록하므로 `exec` 세션 추적에 쓸 수 없다
+(실측 확인). 반드시 stdout 헤더의 `session id:` 줄을 쓴다.
 
 상대가 Claude인 경우:
 
