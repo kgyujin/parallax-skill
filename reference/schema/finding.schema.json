@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ParallaxFindings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile", "verdict", "findings", "not_reviewed", "summary"],
+  "properties": {
+    "profile": {
+      "type": "string",
+      "description": "브리프에서 지정된 프로파일 이름을 그대로 되돌려준다. 렌즈가 제대로 전달됐는지 확인하는 용도."
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["APPROVE", "CHANGES_REQUESTED"],
+      "description": "critical 또는 major finding이 하나라도 있으면 CHANGES_REQUESTED."
+    },
+    "summary": {
+      "type": "string",
+      "description": "검토 대상을 어떻게 이해했는지 2~3문장. 대상을 잘못 이해한 검토를 걸러내는 용도."
+    },
+    "findings": {
+      "type": "array",
+      "description": "증거를 갖춘 결함만. 없으면 빈 배열. 억지로 채우지 않는다.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "category", "location", "claim", "evidence", "confidence"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "F1, F2 ... 형식의 짧은 식별자."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "major", "minor"],
+            "description": "프로파일의 심각도 기준을 따른다."
+          },
+          "category": {
+            "type": "string",
+            "description": "프로파일이 정의한 카테고리 중 하나. 목록에 없는 값을 만들지 않는다."
+          },
+          "location": {
+            "type": "string",
+            "description": "file.ext:123 형식, 또는 문서의 섹션 제목/문단 인용."
+          },
+          "claim": {
+            "type": "string",
+            "description": "무엇이 왜 잘못됐는가. 한 문장. 수정 제안이 아니라 결함 진술."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "프로파일이 요구하는 증거 형식을 그대로 채운다. 코드라면 구체적 입력/상태에서 관찰되는 잘못된 출력, 문서라면 인용 + 그 가정이 깨지는 시나리오. 이 칸을 채울 수 없으면 finding을 내지 않는다."
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["certain", "likely", "speculative"],
+            "description": "speculative는 증거가 약하다는 자기 신고. 감추지 말고 정직하게 표시한다."
+          }
+        }
+      }
+    },
+    "not_reviewed": {
+      "type": "array",
+      "description": "읽지 못했거나 판단할 수 없었던 영역. 정직한 미검증 표시. 빈 배열이면 전부 봤다는 주장이 된다.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scope", "reason"],
+        "properties": {
+          "scope": { "type": "string", "description": "검토하지 못한 경로 또는 범위." },
+          "reason": { "type": "string", "description": "왜 못 봤는가 (접근 불가, 범위 밖, 판단 근거 부족 등)." }
+        }
+      }
+    }
+  }
+}
